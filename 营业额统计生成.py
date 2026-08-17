@@ -2190,8 +2190,9 @@ def gui_main_reference():
 
     root = tk.Tk()
     root.title('营业额统计')
-    root.resizable(False, False)
-    window_width, window_height = 820, 720
+    root.resizable(True, False)
+    window_width, window_height = 1120, 720
+    root.minsize(980, window_height)
     x = (root.winfo_screenwidth() - window_width) // 2
     y = (root.winfo_screenheight() - window_height) // 2
     root.geometry(f'{window_width}x{window_height}+{x}+{y}')
@@ -2246,15 +2247,18 @@ def gui_main_reference():
     canvas.pack(fill='both', expand=True)
 
     # 极浅网格和边缘光斑，只服务于氛围，不穿透内容层。
-    for grid_x in range(0, window_width, 28):
+    for grid_x in range(0, root.winfo_screenwidth() + 28, 28):
         canvas.create_line(grid_x, 0, grid_x, window_height, fill=GRID)
     for grid_y in range(0, window_height, 28):
         canvas.create_line(0, grid_y, window_width, grid_y, fill=GRID)
     canvas.create_oval(-170, -150, 170, 190, fill='#C8F5EF', outline='')
-    canvas.create_oval(665, 185, 990, 510, fill='#D7E8FF', outline='')
+    right_glow = canvas.create_oval(
+        window_width - 175, 185, window_width + 150, 510,
+        fill='#D7E8FF', outline=''
+    )
 
-    def rounded_rectangle(x1, y1, x2, y2, radius=18, **kwargs):
-        points = [
+    def rounded_points(x1, y1, x2, y2, radius=18):
+        return [
             x1 + radius, y1, x2 - radius, y1,
             x2, y1, x2, y1 + radius,
             x2, y2 - radius, x2, y2,
@@ -2262,8 +2266,11 @@ def gui_main_reference():
             x1, y2, x1, y2 - radius,
             x1, y1 + radius, x1, y1,
         ]
+
+    def rounded_rectangle(x1, y1, x2, y2, radius=18, **kwargs):
         return canvas.create_polygon(
-            points, smooth=True, splinesteps=24, **kwargs
+            rounded_points(x1, y1, x2, y2, radius),
+            smooth=True, splinesteps=24, **kwargs
         )
 
     try:
@@ -2272,61 +2279,110 @@ def gui_main_reference():
         pass
 
     # 顶部品牌栏。
-    rounded_rectangle(
-        80, 16, 740, 66, radius=18,
+    top_bar = rounded_rectangle(
+        120, 16, window_width - 120, 66, radius=18,
         fill='#F8FEFD', outline='#FFFFFF', width=1
     )
-    canvas.create_oval(94, 26, 128, 60, fill=TEAL, outline='')
+    canvas.create_oval(134, 26, 168, 60, fill=TEAL, outline='')
     canvas.create_text(
-        111, 43, text='营', font=('Microsoft YaHei UI', 11, 'bold'),
+        151, 43, text='营', font=('Microsoft YaHei UI', 11, 'bold'),
         fill=WHITE
     )
     canvas.create_text(
-        140, 29, anchor='nw', text='营业额统计',
+        180, 29, anchor='nw', text='营业额统计',
         font=('Microsoft YaHei UI', 10, 'bold'), fill=TEXT
     )
     canvas.create_text(
-        140, 47, anchor='nw', text='移动数据工作台',
-        font=('Microsoft YaHei UI', 7), fill=MUTED
+        180, 47, anchor='nw', text='移动数据工作台',
+        font=('Microsoft YaHei UI', 8, 'bold'), fill=MUTED
     )
-    canvas.create_text(
-        410, 41, text='X-ME  |  晴',
+    center_brand = canvas.create_text(
+        window_width / 2, 41, text='X-ME  |  晴',
         font=('Segoe UI Variable', 10, 'bold'), fill=TEAL_DARK
     )
-    rounded_rectangle(
-        625, 26, 724, 57, radius=15,
+    status_surface = rounded_rectangle(
+        window_width - 235, 26, window_width - 136, 57, radius=15,
         fill='#E5F7F5', outline='#C8EAE7', width=1
     )
-    canvas.create_oval(637, 38, 645, 46, fill=TEAL, outline='')
+    status_dot = canvas.create_oval(
+        window_width - 223, 38, window_width - 215, 46,
+        fill=TEAL, outline=''
+    )
     top_status = tk.Label(
         canvas, textvariable=status_var, bg='#E5F7F5', fg=TEAL_DARK,
         font=('Microsoft YaHei UI', 8, 'bold')
     )
-    canvas.create_window(682, 42, window=top_status)
+    top_status_window = canvas.create_window(
+        window_width - 178, 42, window=top_status
+    )
 
     # 居中标题与功能标签。
-    canvas.create_text(
-        410, 92, text='两份流水  一键合并',
+    hero_title = canvas.create_text(
+        window_width / 2, 92, text='两份流水  一键合并',
         font=('Microsoft YaHei UI', 25, 'bold'), fill=TEXT
     )
-    tag_specs = [('自动匹配', 342), ('异常标红', 410), ('高清导出', 478)]
-    for tag_text, tag_x in tag_specs:
-        rounded_rectangle(
+    tag_specs = [('自动匹配', -68), ('异常标红', 0), ('高清导出', 68)]
+    tag_items = []
+    for tag_text, tag_offset in tag_specs:
+        tag_x = window_width / 2 + tag_offset
+        tag_surface = rounded_rectangle(
             tag_x - 29, 119, tag_x + 29, 143, radius=12,
             fill='#F8FEFD', outline='#FFFFFF', width=1
         )
-        canvas.create_text(
+        tag_label = canvas.create_text(
             tag_x, 131, text=tag_text,
-            font=('Microsoft YaHei UI', 7), fill=MUTED
+            font=('Microsoft YaHei UI', 8, 'bold'), fill=MUTED
         )
+        tag_items.append((tag_surface, tag_label, tag_offset))
 
     # 中央工作台。
-    rounded_rectangle(91, 165, 729, 687, radius=23,
-                      fill='#C9DCDA', outline='')
-    rounded_rectangle(86, 160, 724, 682, radius=23,
-                      fill=SURFACE, outline='#FFFFFF', width=1)
+    main_shadow = rounded_rectangle(
+        105, 165, window_width - 95, 687, radius=23,
+        fill='#C9DCDA', outline=''
+    )
+    main_surface = rounded_rectangle(
+        100, 160, window_width - 100, 682, radius=23,
+        fill=SURFACE, outline='#FFFFFF', width=1
+    )
     workbench = tk.Frame(canvas, bg=SURFACE, bd=0, highlightthickness=0)
-    canvas.create_window(405, 421, window=workbench, width=580, height=480)
+    workbench_window = canvas.create_window(
+        window_width / 2, 421, window=workbench,
+        width=window_width - 260, height=480
+    )
+
+    def resize_layout(event):
+        """保持内容居中，并让表单随窗口宽度同步伸缩。"""
+        width = max(event.width, 980)
+        center = width / 2
+        canvas.coords(right_glow, width - 175, 185, width + 150, 510)
+        canvas.coords(
+            top_bar, *rounded_points(120, 16, width - 120, 66, 18)
+        )
+        canvas.coords(center_brand, center, 41)
+        canvas.coords(
+            status_surface,
+            *rounded_points(width - 235, 26, width - 136, 57, 15)
+        )
+        canvas.coords(status_dot, width - 223, 38, width - 215, 46)
+        canvas.coords(top_status_window, width - 178, 42)
+        canvas.coords(hero_title, center, 92)
+        for tag_surface, tag_label, tag_offset in tag_items:
+            tag_x = center + tag_offset
+            canvas.coords(
+                tag_surface,
+                *rounded_points(tag_x - 29, 119, tag_x + 29, 143, 12)
+            )
+            canvas.coords(tag_label, tag_x, 131)
+        canvas.coords(
+            main_shadow, *rounded_points(105, 165, width - 95, 687, 23)
+        )
+        canvas.coords(
+            main_surface, *rounded_points(100, 160, width - 100, 682, 23)
+        )
+        canvas.coords(workbench_window, center, 421)
+        canvas.itemconfigure(workbench_window, width=width - 260)
+
+    canvas.bind('<Configure>', resize_layout)
 
     style = ttk.Style(root)
     try:
@@ -2334,7 +2390,7 @@ def gui_main_reference():
     except tk.TclError:
         pass
     style.configure(
-        'Reference.TEntry', font=('Microsoft YaHei UI', 9),
+        'Reference.TEntry', font=('Microsoft YaHei UI', 10, 'bold'),
         padding=(11, 9), fieldbackground=WHITE, foreground=TEXT,
         bordercolor=BORDER, lightcolor=BORDER, darkcolor=BORDER,
         borderwidth=1, relief='flat'
@@ -2356,8 +2412,7 @@ def gui_main_reference():
     def display_path(path):
         if not path:
             return '尚未选择文件'
-        name = os.path.basename(path)
-        return name if len(name) <= 22 else name[:19] + '...'
+        return os.path.basename(path)
 
     def refresh_display(*_args):
         dd_display.set(display_path(dd_var.get()))
@@ -2398,7 +2453,7 @@ def gui_main_reference():
     ).pack(side='left', padx=(10, 0))
     tk.Label(
         heading, textvariable=status_var, bg=SURFACE_ALT, fg=MUTED,
-        font=('Microsoft YaHei UI', 8), padx=9, pady=4
+        font=('Microsoft YaHei UI', 8, 'bold'), padx=9, pady=4
     ).pack(side='right')
 
     tiles = tk.Frame(workbench, bg=SURFACE)
@@ -2430,7 +2485,7 @@ def gui_main_reference():
         ).pack(anchor='w')
         tk.Label(
             copy, textvariable=display_var, bg=WHITE, fg=MUTED,
-            font=('Microsoft YaHei UI', 7)
+            font=('Microsoft YaHei UI', 8, 'bold')
         ).pack(anchor='w', pady=(3, 0))
         button = tk.Button(
             tile, text='选择', command=command, bg=WHITE, fg=TEAL_DARK,
@@ -2460,7 +2515,7 @@ def gui_main_reference():
     ).grid(row=0, column=0, sticky='w')
     tk.Label(
         fields, text='选填 · 留空自动提取', bg=SURFACE, fg=MUTED,
-        font=('Microsoft YaHei UI', 7)
+        font=('Microsoft YaHei UI', 8, 'bold')
     ).grid(row=0, column=0, sticky='e')
     date_entry = ttk.Entry(
         fields, textvariable=date_var, style='Reference.TEntry'
@@ -2521,11 +2576,11 @@ def gui_main_reference():
     ).pack(side='left', padx=10)
     tk.Label(
         log_header, textvariable=action_status_var, bg=SURFACE_ALT, fg=MUTED,
-        font=('Microsoft YaHei UI', 7)
+        font=('Microsoft YaHei UI', 8, 'bold')
     ).pack(side='right', padx=10)
 
     log_text = tk.Text(
-        log_panel, font=('Cascadia Mono', 8), height=4, wrap='word',
+        log_panel, font=('Cascadia Mono', 8, 'bold'), height=4, wrap='word',
         bg=SURFACE_ALT, fg='#446765', insertbackground=TEXT,
         selectbackground='#CBEAE7', relief='flat', bd=0,
         padx=10, pady=6, highlightthickness=0
